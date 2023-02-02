@@ -288,6 +288,10 @@ class HMNet(nn.Module):
         self.cross_attn = SwinModule(in_channels=n_feats, hidden_dimension=n_feats, layers=2,
                                                 downscaling_factor=1, num_heads=n_heads, head_dim=head_dim,
                                                 window_size=win_size, relative_pos_embedding=True, cross_attn=True)
+        
+        self.self_attn = SwinModule(in_channels=n_feats, hidden_dimension=n_feats, layers=2,
+                                                downscaling_factor=1, num_heads=n_heads, head_dim=head_dim,
+                                                window_size=win_size, relative_pos_embedding=True, cross_attn=False) 
 
         self.upsamplex2 = nn.Upsample(scale_factor=2, mode='bilinear')
 
@@ -394,6 +398,48 @@ class HMNet(nn.Module):
         # x_1 = t_1
         # x_2 = t_2
         
+        x = torch.abs(x_1 - x_2)
+
+        x = self.upsamplex2(self.upsamplex2(x))
+
+        # classifier
+        x = self.classifier(x)
+
+        return x
+    
+    def forward_feature_level_cross_attention_cascade(self, x1, x2, edge1, edge2):
+        '''
+            edge_feature: q,
+            image_feature: kv,
+        '''
+
+        f_1 = self.FE1(x1)
+        f_2 = self.FE1(x2)
+
+        fe_1 = self.FEE1(edge1)
+        fe_2 = self.FEE2(edge2)
+
+        # insert transformer module
+        # x:kv, y:q
+        t_1 = self.cross_attn(f_1, fe_1)
+        t_2 = self.cross_attn(f_2, fe_2)
+
+        ## before feature fusion, cascade transfomer module be perform
+        # sab sab; sab cab; cab sab; cab cab (sab: self_attn, cab: cross_attn)
+        t_1 = self.self_attn(t_1) # plain fusion
+        t_2 = self.self_attn(t_2)
+
+        a = t_1.clone()
+        b = t_2.clone()
+        # t_1 = self.cross_attn(t_1, b)
+        # t_2 = self.cross_attn(t_2, a)
+
+        x_1 = f_1 + fe_1 + t_1
+        x_2 = f_2 + fe_2 + t_2
+        # x_1 = t_1
+        # x_2 = t_2
+        
+        c = torch.cat((x_1, x_2), dim=1)
         x = torch.abs(x_1 - x_2)
 
         x = self.upsamplex2(self.upsamplex2(x))
