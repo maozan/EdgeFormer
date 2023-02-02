@@ -439,7 +439,6 @@ class HMNet(nn.Module):
         # x_1 = t_1
         # x_2 = t_2
         
-        c = torch.cat((x_1, x_2), dim=1)
         x = torch.abs(x_1 - x_2)
 
         x = self.upsamplex2(self.upsamplex2(x))
