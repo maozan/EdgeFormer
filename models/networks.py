@@ -159,6 +159,9 @@ def define_G(args, init_type='normal', init_gain=0.02, gpu_ids=[]):
     elif args.net_G == "HMNet_feature_lv_ca":
         net = HMNet(input_nc=3, output_nc=2, feat_nc=32, image_level=False, is_trans=True)
 
+    elif args.net_G == "HMNet_feature_lv_ca_fusion":
+        net = HMNet(input_nc=3, output_nc=2, feat_nc=32, image_level=False, is_trans=True, fusion=True)
+
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % args.net_G)
     return init_net(net, init_type, init_gain, gpu_ids)
