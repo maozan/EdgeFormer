@@ -148,19 +148,19 @@ def define_G(args, init_type='normal', init_gain=0.02, gpu_ids=[]):
         net = SICDNet(input_nc=3, output_nc=2, feat_nc=64)
 
     elif args.net_G == "HMNet_pure":
-        net = HMNet(input_nc=3, output_nc=2, feat_nc=32)
+        net = HMNet(input_nc=3, output_nc=2)
     
     elif args.net_G == "HMNet_image_lv":
-        net = HMNet(input_nc=3, output_nc=2, feat_nc=32, image_level=True)
+        net = HMNet(input_nc=3, output_nc=2, image_level=True)
 
     elif args.net_G == "HMNet_feature_lv":
-        net = HMNet(input_nc=3, output_nc=2, feat_nc=32, image_level=False)
+        net = HMNet(input_nc=3, output_nc=2, image_level=False)
 
     elif args.net_G == "HMNet_feature_lv_ca":
-        net = HMNet(input_nc=3, output_nc=2, feat_nc=32, image_level=False, is_trans=True)
+        net = HMNet(input_nc=3, output_nc=2, image_level=False, is_trans=True)
 
     elif args.net_G == "HMNet_feature_lv_ca_fusion":
-        net = HMNet(input_nc=3, output_nc=2, feat_nc=32, image_level=False, is_trans=True, fusion=True)
+        net = HMNet(input_nc=3, output_nc=2, position=args.position_length, image_level=False, is_trans=True, fusion=True)
 
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % args.net_G)
