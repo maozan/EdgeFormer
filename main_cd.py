@@ -61,6 +61,8 @@ if __name__ == '__main__':
                              'base_transformer_pos_s4_dd8_dedim8|ChangeFormerV5|SiamUnet_diff')
     parser.add_argument('--loss', default='ce', type=str)
 
+    parser.add_argument('--position_length', default=2, type=int)
+
     # optimizer
     parser.add_argument('--optimizer', default='sgd', type=str)
     parser.add_argument('--lr', default=0.01, type=float)
