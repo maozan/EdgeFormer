@@ -297,6 +297,7 @@ class CDTrainer():
             if len(self.G_pred[-1]) == 1:
                 self.G_final_pred = self.G_pred[-1]
             else:
+                print('----G_pred 2----')
                 self.G_final_pred = self.G_pred[-1][-1]
 
             
@@ -316,6 +317,7 @@ class CDTrainer():
             if len(self.G_pred[-1]) == 1:
                 self.G_loss = self._pxl_loss(self.G_pred[-1], gt)
             else:
+                print('----dice loss----')
                 from models.losses import dice_loss
                 self.G_loss = dice_loss(self.G_pred[-1][0], gt) + self._pxl_loss(self.G_pred[-1][1], gt)
 
