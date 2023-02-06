@@ -19,6 +19,8 @@ class CDEvaluator():
 
     def __init__(self, args, dataloader):
 
+        self.args = args
+
         self.dataloader = dataloader
 
         self.n_class = args.n_class
@@ -149,9 +151,18 @@ class CDEvaluator():
 
     def _forward_pass(self, batch):
         self.batch = batch
+        print(batch.keys())
         img_in1 = batch['A'].to(self.device)
         img_in2 = batch['B'].to(self.device)
-        self.G_pred = self.net_G(img_in1, img_in2)[-1]
+        if self.args.dataset == 'CDDataset_edge':
+            print('test edge')
+            img_in1_edge = batch['A_edge'].to(self.device)
+            img_in2_edge = batch['B_edge'].to(self.device)
+            self.G_pred = self.net_G(img_in1, img_in2, img_in1_edge, img_in2_edge)[-1]
+        else:
+            print('test no edge')
+            self.G_pred = self.net_G(img_in1, img_in2)[-1]
+        # self.G_pred = self.net_G(img_in1, img_in2)[-1]
 
     def eval_models(self,checkpoint_name='best_ckpt.pt'):
 
