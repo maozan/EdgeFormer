@@ -51,7 +51,7 @@ def main():
 
     dataloader = utils.get_loader(args.data_name, img_size=args.img_size,
                                   batch_size=args.batch_size, is_train=False,
-                                  split=args.split)
+                                  split=args.split, dataset=args.dataset)
     model = CDEvaluator(args=args, dataloader=dataloader)
 
     model.eval_models(checkpoint_name=args.checkpoint_name)
