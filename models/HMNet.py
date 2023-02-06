@@ -273,10 +273,11 @@ class SwinModule(nn.Module):
             return x.permute(0, 3, 1, 2)
 
 class HMNet(nn.Module):
-    def __init__(self, input_nc, output_nc, feat_nc, 
+    def __init__(self, input_nc, output_nc, feat_nc, position=4,
                         n_feats=256, n_heads=4, head_dim=64, win_size=4,
                         image_level=True,
-                        is_trans=False):
+                        is_trans=False,
+                        fusion=False):
         super(HMNet, self).__init__()
         # cat之后的特征提取器
         self.FEC = Conv(in_d = 3 + 12)
@@ -295,16 +296,21 @@ class HMNet(nn.Module):
 
         self.upsamplex2 = nn.Upsample(scale_factor=2, mode='bilinear')
 
-        self.classifier = self.classifier = nn.Sequential(
-                        nn.Conv2d(256, feat_nc, kernel_size=3,
+        self.downdim2 = nn.Conv2d(n_feats * 2, n_feats, kernel_size=1)
+
+        self.classifier = nn.Sequential(
+                        nn.Conv2d(n_feats // position, n_feats // position, kernel_size=3,
                                             padding=1, stride=1, bias=False),
-                        nn.BatchNorm2d(feat_nc),
+                        nn.BatchNorm2d(n_feats // position),
                         nn.ReLU(),
-                        nn.Conv2d(feat_nc, output_nc, kernel_size=1)
+                        nn.Conv2d(n_feats // position, output_nc, kernel_size=1)
                         )
 
         self.image_level = image_level
         self.is_trans = is_trans
+        self.fusion = fusion
+        self.position = position
+        # self.weight = nn.Parameter(torch.rand(2))
 
     def forward(self, x1, x2, edge1=None, edge2=None):
         
@@ -316,7 +322,11 @@ class HMNet(nn.Module):
                 print("===== feature =====")
                 if self.is_trans:
                     print('----transformer----')
-                    x = self.forward_feature_level_cross_attention(x1, x2, edge1, edge2)
+                    if self.fusion:
+                        a, b = self.forward_feature_level_cross_attention_fusion(x1, x2, edge1, edge2)
+                        x = (a, b)
+                    else:
+                        x = self.forward_feature_level_cross_attention(x1, x2, edge1, edge2)
                 else:
                     x = self.forward_feature_level(x1, x2, edge1, edge2)
                 
@@ -407,7 +417,7 @@ class HMNet(nn.Module):
 
         return x
     
-    def forward_feature_level_cross_attention_cascade(self, x1, x2, edge1, edge2):
+    def forward_feature_level_cross_attention_fusion(self, x1, x2, edge1, edge2):
         '''
             edge_feature: q,
             image_feature: kv,
@@ -419,6 +429,12 @@ class HMNet(nn.Module):
         fe_1 = self.FEE1(edge1)
         fe_2 = self.FEE2(edge2)
 
+        #########################
+        ## inference时候保存类热力激活图
+        # self.save_featuremap(f_1, 'raw')
+        # self.save_featuremap(fe_1, 'edge')
+        #########################
+
         # insert transformer module
         # x:kv, y:q
         t_1 = self.cross_attn(f_1, fe_1)
@@ -429,24 +445,47 @@ class HMNet(nn.Module):
         t_1 = self.self_attn(t_1) # plain fusion
         t_2 = self.self_attn(t_2)
 
-        a = t_1.clone()
-        b = t_2.clone()
-        # t_1 = self.cross_attn(t_1, b)
-        # t_2 = self.cross_attn(t_2, a)
+        ## time A and B feature concat
+        t = self.downdim2(torch.cat((t_1, t_2), dim=1))
+        t_align = repeat(t, 'b c h w -> b d c h w', d = 1)
+        t_align = rearrange(t_align, 'b d (c c1) h w -> b (d c1) c h w', c1 = self.position)
 
         x_1 = f_1 + fe_1 + t_1
         x_2 = f_2 + fe_2 + t_2
-        # x_1 = t_1
-        # x_2 = t_2
         
         x = torch.abs(x_1 - x_2)
+        # print(t_align.shape, x.shape)
+        x_align = repeat(x, 'b c h w -> b d c h w', d = 1)
+        x_align = rearrange(x_align, 'b d (c c1) h w -> b (d c1) c h w', c1 = self.position)
 
+        ## point aligned
+        t_align = F.softmax(t_align, dim=1)
+        # print(t_align.shape, x_align.shape)
+        x = t_align * x_align
+        x = torch.sum(x, dim=1)
+
+        t =self.upsamplex2(self.upsamplex2(t))
         x = self.upsamplex2(self.upsamplex2(x))
 
         # classifier
+        # print(x.shape)
         x = self.classifier(x)
 
-        return x
+        return t, x
+
+    def save_featuremap(self, a, name):
+        import numpy as np
+        import cv2
+        import random
+        print(a.shape)
+        vis_feature = torch.max(a, dim=1, keepdim=True)[0]
+        print(vis_feature.shape)
+        vis_feature = torch.squeeze(vis_feature).cpu().numpy()
+        print(vis_feature.shape)
+        vis_feature = (((vis_feature - np.min(vis_feature))/(np.max(vis_feature)-np.min(vis_feature)))*255).astype(np.uint8)
+        vis_feature = cv2.applyColorMap(vis_feature, cv2.COLORMAP_JET)
+        # cv2.imwrite('./feature_vis/'+ str(random.randint(0, 100)) + '.png',vis_feature)
+        cv2.imwrite('./feature_vis/'+ name + '.png', vis_feature)
 
 
 class HMNet_res(torch.nn.Module):
