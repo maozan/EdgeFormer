@@ -36,6 +36,8 @@ def main():
     parser.add_argument('--net_G', default='base_transformer_pos_s4_dd8_dedim8', type=str,
                         help='base_resnet18 | base_transformer_pos_s4_dd8 | base_transformer_pos_s4_dd8_dedim8|')
 
+    parser.add_argument('--position_length', default=2, type=int)
+
     parser.add_argument('--checkpoint_name', default='best_ckpt.pt', type=str)
 
     args = parser.parse_args()
