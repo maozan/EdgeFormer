@@ -273,7 +273,7 @@ class SwinModule(nn.Module):
             return x.permute(0, 3, 1, 2)
 
 class HMNet(nn.Module):
-    def __init__(self, input_nc, output_nc, feat_nc, position=4,
+    def __init__(self, input_nc, output_nc, position=4,
                         n_feats=256, n_heads=4, head_dim=64, win_size=4,
                         image_level=True,
                         is_trans=False,
@@ -323,6 +323,7 @@ class HMNet(nn.Module):
                 if self.is_trans:
                     print('----transformer----')
                     if self.fusion:
+                        print("----fusion----")
                         a, b = self.forward_feature_level_cross_attention_fusion(x1, x2, edge1, edge2)
                         x = (a, b)
                     else:
@@ -446,6 +447,7 @@ class HMNet(nn.Module):
         t_2 = self.self_attn(t_2)
 
         ## time A and B feature concat
+        print('position_length: ', self.position)
         t = self.downdim2(torch.cat((t_1, t_2), dim=1))
         t_align = repeat(t, 'b c h w -> b d c h w', d = 1)
         t_align = rearrange(t_align, 'b d (c c1) h w -> b (d c1) c h w', c1 = self.position)
