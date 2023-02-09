@@ -62,6 +62,7 @@ if __name__ == '__main__':
     parser.add_argument('--loss', default='ce', type=str)
 
     parser.add_argument('--position_length', default=2, type=int)
+    parser.add_argument('--blocks', default=1, type=int)
 
     # optimizer
     parser.add_argument('--optimizer', default='sgd', type=str)

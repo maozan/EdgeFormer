@@ -294,7 +294,7 @@ class CDTrainer():
                     self.G_final_pred = self.G_final_pred + pred
             self.G_final_pred = self.G_final_pred/len(self.G_pred)
         else:
-            if len(self.G_pred[-1]) == 1:
+            if not isinstance(self.G_pred[-1], list):
                 self.G_final_pred = self.G_pred[-1]
             else:
                 print('----G_pred 2----')
@@ -314,7 +314,7 @@ class CDTrainer():
                 i+=1
             self.G_loss = temp_loss
         else:
-            if len(self.G_pred[-1]) == 1:
+            if not isinstance(self.G_pred[-1], list):
                 self.G_loss = self._pxl_loss(self.G_pred[-1], gt)
             else:
                 print('----dice loss----')

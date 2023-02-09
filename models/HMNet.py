@@ -272,8 +272,32 @@ class SwinModule(nn.Module):
                 x = shifted_block(x, y)
             return x.permute(0, 3, 1, 2)
 
+class CGB(nn.Module):
+    # cue guidance block
+    def __init__(self, n_feats=256, n_heads=4, head_dim=64, win_size=4):
+        super(CGB, self).__init__()
+
+        self.cross_attn = SwinModule(in_channels=n_feats, hidden_dimension=n_feats, layers=2,
+                                                downscaling_factor=1, num_heads=n_heads, head_dim=head_dim,
+                                                window_size=win_size, relative_pos_embedding=True, cross_attn=True)
+        
+        self.self_attn = SwinModule(in_channels=n_feats, hidden_dimension=n_feats, layers=2,
+                                                downscaling_factor=1, num_heads=n_heads, head_dim=head_dim,
+                                                window_size=win_size, relative_pos_embedding=True, cross_attn=False)
+        # self.conv = nn.Conv2d(256, 32, kernel_size=1)
+        # self.conv_ = nn.Conv2d(32, 256, kernel_size=1)
+
+    def forward(self, feature, feature_edge):
+        # feature = self.conv(feature)
+        # feature_edge = self.conv(feature_edge)
+        x = self.cross_attn(feature, feature_edge)
+        x = self.self_attn(x)
+        # x = self.conv_(x)
+        return x
+
+
 class HMNet(nn.Module):
-    def __init__(self, input_nc, output_nc, position=4,
+    def __init__(self, input_nc, output_nc, position=4,block=1,
                         n_feats=256, n_heads=4, head_dim=64, win_size=4,
                         image_level=True,
                         is_trans=False,
@@ -286,19 +310,13 @@ class HMNet(nn.Module):
         self.FEE1 = Conv(in_d = 12)
         self.FEE2 = Conv(in_d = 12)
 
-        self.cross_attn = SwinModule(in_channels=n_feats, hidden_dimension=n_feats, layers=2,
-                                                downscaling_factor=1, num_heads=n_heads, head_dim=head_dim,
-                                                window_size=win_size, relative_pos_embedding=True, cross_attn=True)
-        
-        self.self_attn = SwinModule(in_channels=n_feats, hidden_dimension=n_feats, layers=2,
-                                                downscaling_factor=1, num_heads=n_heads, head_dim=head_dim,
-                                                window_size=win_size, relative_pos_embedding=True, cross_attn=False) 
+        self.guidBlock = CGB(n_feats, n_heads, head_dim, win_size)
 
         self.upsamplex2 = nn.Upsample(scale_factor=2, mode='bilinear')
 
         self.downdim2 = nn.Conv2d(n_feats * 2, n_feats, kernel_size=1)
 
-        self.classifier = nn.Sequential(
+        self.classifier_posiotion = nn.Sequential(
                         nn.Conv2d(n_feats // position, n_feats // position, kernel_size=3,
                                             padding=1, stride=1, bias=False),
                         nn.BatchNorm2d(n_feats // position),
@@ -306,10 +324,19 @@ class HMNet(nn.Module):
                         nn.Conv2d(n_feats // position, output_nc, kernel_size=1)
                         )
 
+        self.classifier = nn.Sequential(
+                        nn.Conv2d(n_feats, n_feats, kernel_size=3,
+                                            padding=1, stride=1, bias=False),
+                        nn.BatchNorm2d(n_feats),
+                        nn.ReLU(),
+                        nn.Conv2d(n_feats, output_nc, kernel_size=1)
+                        )
+
         self.image_level = image_level
         self.is_trans = is_trans
         self.fusion = fusion
         self.position = position
+        self.blocks = block
         # self.weight = nn.Parameter(torch.rand(2))
 
     def forward(self, x1, x2, edge1=None, edge2=None):
@@ -325,8 +352,9 @@ class HMNet(nn.Module):
                     if self.fusion:
                         print("----fusion----")
                         a, b = self.forward_feature_level_cross_attention_fusion(x1, x2, edge1, edge2)
-                        x = (a, b)
+                        x = [a, b]
                     else:
+                        print("----nofusion----")
                         x = self.forward_feature_level_cross_attention(x1, x2, edge1, edge2)
                 else:
                     x = self.forward_feature_level(x1, x2, edge1, edge2)
@@ -401,8 +429,12 @@ class HMNet(nn.Module):
 
         # insert transformer module
         # x:kv, y:q
-        t_1 = self.cross_attn(f_1, fe_1)
-        t_2 = self.cross_attn(f_2, fe_2)
+        for i in range(self.blocks):
+            if i != 0:
+                f_1 = t_1
+                f_2 = t_2
+            t_1 = self.guidBlock(f_1, fe_1)
+            t_2 = self.guidBlock(f_2, fe_2)
 
         x_1 = f_1 + fe_1 + t_1
         x_2 = f_2 + fe_2 + t_2
@@ -438,13 +470,12 @@ class HMNet(nn.Module):
 
         # insert transformer module
         # x:kv, y:q
-        t_1 = self.cross_attn(f_1, fe_1)
-        t_2 = self.cross_attn(f_2, fe_2)
-
-        ## before feature fusion, cascade transfomer module be perform
-        # sab sab; sab cab; cab sab; cab cab (sab: self_attn, cab: cross_attn)
-        t_1 = self.self_attn(t_1) # plain fusion
-        t_2 = self.self_attn(t_2)
+        for i in range(self.blocks):
+            if i != 0:
+                f_1 = t_1
+                f_2 = t_2
+            t_1 = self.guidBlock(f_1, fe_1)
+            t_2 = self.guidBlock(f_2, fe_2)
 
         ## time A and B feature concat
         print('position_length: ', self.position)
@@ -471,7 +502,7 @@ class HMNet(nn.Module):
 
         # classifier
         # print(x.shape)
-        x = self.classifier(x)
+        x = self.classifier_posiotion(x)
 
         return t, x
 
