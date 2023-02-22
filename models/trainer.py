@@ -294,11 +294,7 @@ class CDTrainer():
                     self.G_final_pred = self.G_final_pred + pred
             self.G_final_pred = self.G_final_pred/len(self.G_pred)
         else:
-            if not isinstance(self.G_pred[-1], list):
-                self.G_final_pred = self.G_pred[-1]
-            else:
-                print('----G_pred 2----')
-                self.G_final_pred = self.G_pred[-1][-1]
+            self.G_final_pred = self.G_pred[-1]
 
             
     def _backward_G(self):
@@ -314,12 +310,7 @@ class CDTrainer():
                 i+=1
             self.G_loss = temp_loss
         else:
-            if not isinstance(self.G_pred[-1], list):
-                self.G_loss = self._pxl_loss(self.G_pred[-1], gt)
-            else:
-                print('----dice loss----')
-                from models.losses import dice_loss
-                self.G_loss = dice_loss(self.G_pred[-1][0], gt) + self._pxl_loss(self.G_pred[-1][1], gt)
+            self.G_loss = self._pxl_loss(self.G_pred[-1], gt)
 
         self.G_loss.backward()
 

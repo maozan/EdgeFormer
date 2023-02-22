@@ -351,13 +351,16 @@ class HMNet(nn.Module):
                     print('----transformer----')
                     if self.fusion:
                         print("----fusion----")
-                        a, b = self.forward_feature_level_cross_attention_fusion(x1, x2, edge1, edge2)
-                        x = [a, b]
+                        x = self.forward_feature_level_cross_attention_fusion(x1, x2, edge1, edge2)
                     else:
                         print("----nofusion----")
                         x = self.forward_feature_level_cross_attention(x1, x2, edge1, edge2)
                 else:
-                    x = self.forward_feature_level(x1, x2, edge1, edge2)
+                    if self.fusion:
+                        print("----fusion----")
+                        x = self.forward_feature_level_fusion(x1, x2, edge1, edge2)
+                    else:
+                        x = self.forward_feature_level(x1, x2, edge1, edge2)
                 
         
         if edge1 is None and edge2 is None:
@@ -412,6 +415,42 @@ class HMNet(nn.Module):
 
         # classifier
         x = self.classifier(x)
+
+        return x
+
+    def forward_feature_level_fusion(self, x1, x2, edge1, edge2):
+
+        f_1 = self.FE1(x1)
+        f_2 = self.FE1(x2)
+
+        fe_1 = self.FEE1(edge1)
+        fe_2 = self.FEE2(edge2)
+
+        # 应用transformer是在这儿的特征融合前还是融合后，应该都有考量
+        x_1 = f_1 + fe_1 
+        x_2 = f_2 + fe_2 
+        
+        print('position_length: ', self.position)
+        f = self.downdim2(torch.cat((f_1, f_2), dim=1))
+        f_align = repeat(f, 'b c h w -> b d c h w', d = 1)
+        f_align = rearrange(f_align, 'b d (c c1) h w -> b (d c1) c h w', c1 = self.position)
+        
+        x = torch.abs(x_1 - x_2)
+        # print(t_align.shape, x.shape)
+        x_align = repeat(x, 'b c h w -> b d c h w', d = 1)
+        x_align = rearrange(x_align, 'b d (c c1) h w -> b (d c1) c h w', c1 = self.position)
+
+        ## point aligned
+        f_align = F.softmax(f_align, dim=1)
+        # print(t_align.shape, x_align.shape)
+        x = f_align * x_align
+        x = torch.sum(x, dim=1)
+
+        x = self.upsamplex2(self.upsamplex2(x))
+
+        # classifier
+        print(x.shape)
+        x = self.classifier_posiotion(x)
 
         return x
 
@@ -497,14 +536,11 @@ class HMNet(nn.Module):
         x = t_align * x_align
         x = torch.sum(x, dim=1)
 
-        t =self.upsamplex2(self.upsamplex2(t))
         x = self.upsamplex2(self.upsamplex2(x))
 
-        # classifier
-        # print(x.shape)
         x = self.classifier_posiotion(x)
 
-        return t, x
+        return x
 
     def save_featuremap(self, a, name):
         import numpy as np

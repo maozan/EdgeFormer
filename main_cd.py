@@ -19,7 +19,8 @@ def test(args):
     from models.evaluator import CDEvaluator
     dataloader = utils.get_loader(args.data_name, img_size=args.img_size,
                                   batch_size=args.batch_size, is_train=False,
-                                  split='test')
+                                  split='test',
+                                  dataset=args.dataset)
     model = CDEvaluator(args=args, dataloader=dataloader)
 
     model.eval_models()

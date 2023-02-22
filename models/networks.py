@@ -155,11 +155,22 @@ def define_G(args, init_type='normal', init_gain=0.02, gpu_ids=[]):
 
     elif args.net_G == "HMNet_feature_lv":
         net = HMNet(input_nc=3, output_nc=2, image_level=False)
+    
+    elif args.net_G == "edm_fm":
+        net = HMNet(input_nc=3, output_nc=2, position=args.position_length, block=args.blocks, image_level=False, is_trans=False, fusion=True)
 
-    elif args.net_G == "HMNet_feature_lv_ca":
+    elif args.net_G == "edm_cgm":
         net = HMNet(input_nc=3, output_nc=2, block=args.blocks, image_level=False, is_trans=True, fusion=False)
 
-    elif args.net_G == "HMNet_feature_lv_ca_fusion":
+    elif args.net_G == "edm_cgm_fm":
+        net = HMNet(input_nc=3, output_nc=2, position=args.position_length, block=args.blocks, image_level=False, is_trans=True, fusion=True)
+    elif args.net_G == "position_2":
+        net = HMNet(input_nc=3, output_nc=2, position=args.position_length, block=args.blocks, image_level=False, is_trans=True, fusion=True)
+    elif args.net_G == "position_4":
+        net = HMNet(input_nc=3, output_nc=2, position=args.position_length, block=args.blocks, image_level=False, is_trans=True, fusion=True)
+    elif args.net_G == "position_8":
+        net = HMNet(input_nc=3, output_nc=2, position=args.position_length, block=args.blocks, image_level=False, is_trans=True, fusion=True)
+    elif args.net_G == "position_16":
         net = HMNet(input_nc=3, output_nc=2, position=args.position_length, block=args.blocks, image_level=False, is_trans=True, fusion=True)
 
     else:
