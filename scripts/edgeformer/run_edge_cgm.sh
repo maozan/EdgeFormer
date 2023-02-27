@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #GPUs
-gpus=3
+gpus=0
 
 #Set paths
 checkpoint_root=./checkpoints
@@ -13,7 +13,7 @@ dataset=CDDataset_edge  # CDDataset_edge
 img_size=256    
 batch_size=8   
 lr=0.0001         
-max_epochs=200
+max_epochs=100
 embed_dim=256
 position_length=2
 blocks=1

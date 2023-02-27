@@ -7,13 +7,13 @@ gpus=3
 checkpoint_root=./checkpoints
 vis_root=./vis
 data_name=LEVIR
-dataset=CDDataset  # CDDataset_edge
+dataset=CDDataset_edge  # CDDataset_edge
 
 
 img_size=256    
 batch_size=8   
-lr=0.0001         
-max_epochs=1
+lr=0.001         
+max_epochs=100
 embed_dim=256
 position_length=2
 blocks=1

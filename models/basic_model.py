@@ -10,6 +10,8 @@ class CDEvaluator():
 
     def __init__(self, args):
 
+        self.args = args
+
         self.n_class = args.n_class
         # define G
         self.net_G = define_G(args=args, gpu_ids=args.gpu_ids)
@@ -54,7 +56,14 @@ class CDEvaluator():
         img_in2 = batch['B'].to(self.device)
         self.shape_h = img_in1.shape[-2]
         self.shape_w = img_in1.shape[-1]
-        self.G_pred = self.net_G(img_in1, img_in2)[-1]
+        if self.args.dataset == 'CDDataset_edge':
+            print('test edge')
+            img_in1_edge = batch['A_edge'].to(self.device)
+            img_in2_edge = batch['B_edge'].to(self.device)
+            self.G_pred = self.net_G(img_in1, img_in2, img_in1_edge, img_in2_edge)[-1]
+        else:
+            print('test no edge')
+            self.G_pred = self.net_G(img_in1, img_in2)[-1]
         return self._visualize_pred()
 
     def eval(self):

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #GPUs
-gpus=0
+gpus=3
 
 #Set paths
 checkpoint_root=./checkpoints
 vis_root=./vis
 data_name=LEVIR
-dataset=CDDataset_edge  # CDDataset_edge
+dataset=CDDataset  # CDDataset_edge
 
 
 img_size=256    
@@ -18,7 +18,7 @@ embed_dim=256
 position_length=2
 blocks=1
 
-net_G=edm_fm        # (HMNet_pure, no edge)、(HMNet_xx_lv, edge)
+net_G=pure_none_edge        # (HMNet_pure, no edge)、(HMNet_xx_lv, edge)
 
 lr_policy=linear
 optimizer=adamw                 #Choices: sgd (set lr to 0.01), adam, adamw

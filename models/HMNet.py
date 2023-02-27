@@ -381,8 +381,6 @@ class HMNet(nn.Module):
         x_1 = torch.cat((x1, edge1), dim=1)
         x_2 = torch.cat((x2, edge2), dim=1)
 
-        print(x_1.shape)
-
         f_1 = self.FEC(x_1)
         f_2 = self.FEC(x_2)
 
@@ -503,8 +501,10 @@ class HMNet(nn.Module):
 
         #########################
         ## inference时候保存类热力激活图
-        # self.save_featuremap(f_1, 'raw')
-        # self.save_featuremap(fe_1, 'edge')
+        # self.save_featuremap(f_1.detach().clone(), 'raw1')
+        # self.save_featuremap(fe_1.detach().clone(), 'edge1')
+        # self.save_featuremap(f_2.detach().clone(), 'raw2')
+        # self.save_featuremap(fe_2.detach().clone(), 'edge2')
         #########################
 
         # insert transformer module
@@ -516,6 +516,12 @@ class HMNet(nn.Module):
             t_1 = self.guidBlock(f_1, fe_1)
             t_2 = self.guidBlock(f_2, fe_2)
 
+        #########################
+        ## inference时候保存类热力激活图
+        # self.save_featuremap(t_1.detach().clone(), 't_1')
+        # self.save_featuremap(t_2.detach().clone(), 't_2')
+        #########################
+
         ## time A and B feature concat
         print('position_length: ', self.position)
         t = self.downdim2(torch.cat((t_1, t_2), dim=1))
@@ -526,6 +532,10 @@ class HMNet(nn.Module):
         x_2 = f_2 + fe_2 + t_2
         
         x = torch.abs(x_1 - x_2)
+        #########################
+        ## inference时候保存类热力激活图
+        # self.save_featuremap(x.detach().clone(), 'abs')
+        #########################
         # print(t_align.shape, x.shape)
         x_align = repeat(x, 'b c h w -> b d c h w', d = 1)
         x_align = rearrange(x_align, 'b d (c c1) h w -> b (d c1) c h w', c1 = self.position)
@@ -538,7 +548,17 @@ class HMNet(nn.Module):
 
         x = self.upsamplex2(self.upsamplex2(x))
 
+        #########################
+        ## inference时候保存类热力激活图
+        # self.save_featuremap(x.detach().clone(), 'x')
+        #########################
+
         x = self.classifier_posiotion(x)
+
+        #########################
+        ## inference时候保存类热力激活图
+        # self.save_featuremap(x.detach().clone(), 'X')
+        #########################
 
         return x
 
@@ -546,7 +566,7 @@ class HMNet(nn.Module):
         import numpy as np
         import cv2
         import random
-        print(a.shape)
+        print('the shape of vis feature', a.shape)
         vis_feature = torch.max(a, dim=1, keepdim=True)[0]
         print(vis_feature.shape)
         vis_feature = torch.squeeze(vis_feature).cpu().numpy()

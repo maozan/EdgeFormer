@@ -147,7 +147,7 @@ def define_G(args, init_type='normal', init_gain=0.02, gpu_ids=[]):
         #Code copied from: https://github.com/fitzpchao/DTCDSCN
         net = SICDNet(input_nc=3, output_nc=2, feat_nc=64)
 
-    elif args.net_G == "HMNet_pure":
+    elif args.net_G == "pure_none_edge":
         net = HMNet(input_nc=3, output_nc=2)
     
     elif args.net_G == "HMNet_image_lv":

@@ -12,8 +12,8 @@ dataset=CDDataset_edge  # CDDataset_edge
 
 img_size=256    
 batch_size=8   
-lr=0.0001         
-max_epochs=200
+lr=0.00005         
+max_epochs=100
 embed_dim=256
 position_length=2
 blocks=3
