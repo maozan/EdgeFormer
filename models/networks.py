@@ -16,6 +16,7 @@ from models.Unet import Unet
 from models.DTCDSCN import CDNet34
 from models.SICDNet import SICDNet
 from models.HMNet import HMNet
+from models.SNUnet import SNUNet_ECAM
 
 ###############################################################################
 # Helper Functions
@@ -142,10 +143,32 @@ def define_G(args, init_type='normal', init_gain=0.02, gpu_ids=[]):
         net = BASE_Transformer(input_nc=3, output_nc=2, token_len=4, resnet_stages_num=4,
                              with_pos='learned', enc_depth=1, dec_depth=8, decoder_dim_head=8)
 
-    elif args.net_G == "SICDNet":
+    elif args.net_G == 'ChangeFormerV6':
+        net = ChangeFormerV6(embed_dim=args.embed_dim) #ChangeFormer with Transformer Encoder and Convolutional Decoder (Fuse)
+    
+    elif args.net_G == "SiamUnet_diff":
+        #Implementation of ``Fully convolutional siamese networks for change detection''
+        #Code copied from: https://github.com/rcdaudt/fully_convolutional_change_detection
+        net = SiamUnet_diff(input_nbr=3, label_nbr=2)
+
+    elif args.net_G == "SiamUnet_conc":
+        #Implementation of ``Fully convolutional siamese networks for change detection''
+        #Code copied from: https://github.com/rcdaudt/fully_convolutional_change_detection
+        net = SiamUnet_conc(input_nbr=3, label_nbr=2)
+
+    elif args.net_G == "Unet":
+        #Usually abbreviated as FC-EF = Image Level Concatenation
+        #Implementation of ``Fully convolutional siamese networks for change detection''
+        #Code copied from: https://github.com/rcdaudt/fully_convolutional_change_detection
+        net = Unet(input_nbr=3, label_nbr=2)
+    
+    elif args.net_G == "DTCDSCN":
         #The implementation of the paper"Building Change Detection for Remote Sensing Images Using a Dual Task Constrained Deep Siamese Convolutional Network Model "
         #Code copied from: https://github.com/fitzpchao/DTCDSCN
-        net = SICDNet(input_nc=3, output_nc=2, feat_nc=64)
+        net = CDNet34(in_channels=3)
+    
+    elif args.net_G == "SNUnet":
+        net = SNUNet_ECAM()
 
     elif args.net_G == "pure_none_edge":
         net = HMNet(input_nc=3, output_nc=2)

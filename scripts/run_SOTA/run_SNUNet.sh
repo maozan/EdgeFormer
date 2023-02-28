@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #GPUs
-gpus=3
+gpus=0
 
 #Set paths
 checkpoint_root=./checkpoints
@@ -15,7 +15,7 @@ lr=0.01
 max_epochs=100
 embed_dim=256
 
-net_G=ChangeFormerV6        #ChangeFormerV6 is the finalized verion
+net_G=SNUnet        #ChangeFormerV6 is the finalized verion
 
 lr_policy=linear
 optimizer=sgd                 #Choices: sgd (set lr to 0.01), adam, adamw
@@ -25,7 +25,7 @@ multi_scale_infer=False
 shuffle_AB=False
 
 #Initializing from pretrained weights
-# pretrain=pretrained_changeformer/pretrained_changeformer.pt
+# pretrain=None
 
 #Train and Validation splits
 split=train         #trainval
